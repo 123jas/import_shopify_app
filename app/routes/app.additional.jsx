@@ -127,7 +127,110 @@ async function extractProducts(products) {
       
     }
   }
-  return {success : errors.length === 0,errors}
+  return {success : errors.length === 0 };
+}
+async function uploadProductsToShopify(products) {
+ 
+  const errors = [];
+  
+  
+      try {
+        products = products.map(product =>{
+          var pr = {...product}
+          pr.Handle = pr.Handle.toLowerCase();
+          return pr;
+        })
+        const main_handles = products.map(product=>product.Handle);
+        const main_handles_string = main_handles.join(',');
+
+       
+        const handleResponse = await axios.get(`https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${main_handles_string}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            },
+          }
+        )
+
+        const main_products_id = handleResponse.data.products;
+        const productDictionary = main_products_id.reduce((acc, main_product) => {
+          acc[main_product.handle] = main_product.id;
+          return acc;
+        }, {});
+       
+ 
+
+
+
+        // const handle_id = product1.complementary_products
+        const complementary_handles = products.map(product => product.complementary_products);
+        const complementary_handles_string = complementary_handles.join(',');
+        console.log(complementary_handles_string);
+        const complementryResponse = await axios.get(
+          `https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${complementary_handles_string}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            },
+          }
+        );
+
+        
+        const complementary_responses = complementryResponse.data.products;
+        
+        const comp_product_dic = complementary_responses.reduce((acc, response) => {
+          acc[response.handle] = response.admin_graphql_api_id;
+          return acc;
+        }, {});
+
+        
+        console.log("complementary product dictionary : ", comp_product_dic);
+        console.log("product dictionary : ",productDictionary);
+       for(const product of products){
+        
+         const simple_id = productDictionary[product.Handle]
+         var graph_ids = [];
+           const arr = product.complementary_products;
+           console.log(arr);
+           const comp_arr = arr.replace(/\s+/g, '').split(",");
+         graph_ids = comp_arr.map(handle => comp_product_dic[handle.toLowerCase()])
+         console.log(graph_ids);
+         
+         
+
+        const referenceResopnse = await axios.post(
+          `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${simple_id}/metafields.json`,
+          {
+            metafield: {
+              namespace: "custom",
+              key: "products_compl",
+              value: JSON.stringify(graph_ids),
+              type: "list.product_reference"
+            },
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            },
+          }
+        )
+      
+        console.log(`data using handle : ${complementryResponse.data.products[0].id}`);
+        console.log(`data using referenceResopnse : ${referenceResopnse}`);
+        
+        // console.log(`data using handle : ,${referenceResopnse.data.products[0].id}`);
+
+       }  
+      } catch (error) {
+        console.error("Error uploading product:", error.response?.data || error.message);
+        
+      }
+  
+ 
+  return { success: errors.length === 0 };
 }
 
  
@@ -143,9 +246,9 @@ export async function action({ request }) {
   const text = await file.text();
   const parsedData = papa.parse(text, { header: true });
 
-  const result = await extractProducts(parsedData.data);
-  // console.log(exractValue);
-  // const result = await uploadProductsToShopify(parsedData.data);
+  const exractValue = await extractProducts(parsedData.data);
+  console.log(exractValue);
+  const result = await uploadProductsToShopify(parsedData.data);
   
   return { success: result.success, errors: result.errors };
 }
@@ -207,7 +310,7 @@ export default function UploadCsv() {
     const text = await file.text();
     const parsedData = papa.parse(text, { header: true });
 
-    const result = await extractProducts(parsedData.data);
+    const result = await uploadProductsToShopify(parsedData.data);
      console.log(result);
   };
 
