@@ -3,7 +3,7 @@
 client_id = "93bb9ba9482db6511746321a9afe5db9"
 name = "product-info-app"
 handle = "product-info-app"
-application_url = "https://paid-blair-ia-cambridge.trycloudflare.com"
+application_url = "https://prepaid-characteristic-sarah-ee.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://paid-blair-ia-cambridge.trycloudflare.com/auth/callback",
-  "https://paid-blair-ia-cambridge.trycloudflare.com/auth/shopify/callback",
-  "https://paid-blair-ia-cambridge.trycloudflare.com/api/auth/callback"
+  "https://prepaid-characteristic-sarah-ee.trycloudflare.com/auth/callback",
+  "https://prepaid-characteristic-sarah-ee.trycloudflare.com/auth/shopify/callback",
+  "https://prepaid-characteristic-sarah-ee.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

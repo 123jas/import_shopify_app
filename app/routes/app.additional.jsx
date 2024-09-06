@@ -22,209 +22,112 @@ export async function loader({ request }) {
   return null;
 };
 
-async function uploadProductsToShopify(products) {
-  const errors = [];
+
+async function extractProducts(products) {
+   const errors = [];
 
 
-  // for (const product of products) {
+  for (const product of products) {
     
-  //   try {
+    try {
      
-  //     const productResponse = await axios.post(
-  //       `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products.json`,
-  //       {
-  //         product: {
-  //           title: product.Title,
-  //           body_html: product.Body_HTML,
-  //           handle : product.Handle,
-  //           product_type: product.Type,
-  //           tags: product.Tags,
-  //           Published: product.Published,
-  //           options : [
-  //             {
-  //               name: product.Option1_key,
-  //               value: product.Option1_Value
-  //             }
-  //           ],
-  //           variants: [
-  //             {
-  //               option1: product.Option1_Value,
-  //               price: product.Variant_Price,
-  //               grams: product.Grams,
-  //               Tags: product.Tags,
-  //               compare_at_price: product.compare_at_price,
-  //               inventory_management: "shopify",
-  //               inventory_quantity: product.Variant_Inventory_Qty
+      const productResponse = await axios.post(
+        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products.json`,
+        {
+          product: {
+            title: product.Title,
+            body_html: product.Body_HTML,
+            handle : product.Handle,
+            product_type: product.Type,
+            tags: product.Tags,
+            Published: product.Published,
+            options : [
+              {
+                name: product.Option1_key,
+                value: product.Option1_Value
+              }
+            ],
+            variants: [
+              {
+                option1: product.Option1_Value,
+                price: product.Variant_Price,
+                grams: product.Grams,
+                Tags: product.Tags,
+                compare_at_price: product.compare_at_price,
+                inventory_management: "shopify",
+                inventory_quantity: product.Variant_Inventory_Qty
 
-  //             },
-  //           ],
-  //         },
-  //       },
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-  //         },
-  //       }
-  //     );
-    
-
-  //     const productId = productResponse.data.product.id;
-
-  //     // Upload image to Shopify
-  //     const imageResponse = await axios.post(
-  //       `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/images.json`,
-  //       {
-  //         image: {
-  //           src: product.Image_Src,
-  //           position: product.Image_Position
-            
-  //         }
-  //       },
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-  //           "ngrok-skip-browser-warning": "69420"
-  //         },
-  //       }
-  //     );
-
-  //     const MetafieldsResp = await axios.post(
-  //       `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/metafields.json`,
-  //       {
-  //         metafield: {
-  //           namespace: product.mf_Namespace,
-  //           key: product.mf_key,
-  //           value : product.mf_value,
-  //           type : product.mf_type
-            
-  //         }
-  //       },
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-  //           "ngrok-skip-browser-warning": "69420"
-  //         },
-  //       }
-  //     );
-
-
-  //     console.log(`Product uploaded: ${productResponse.data.product.title}`);
-  //     console.log(`Image uploaded: ${imageResponse.data.image.id}`);
-  //     console.log(`metafields uploaded : ${MetafieldsResp.data.metafield}`)
-    
-  //   } catch (error) {
-  //     console.error("Error uploading product:", error.response?.data || error.message);
-      
-  //     errors.push({
-  //       product: product.title,
-  //       error: error.response?.data || error.message,
-  //     });
-
-      
-  //   }
-  // }
-
-  
-  
-      try {
-        products = products.map(product =>{
-          var pr = {...product}
-          pr.Handle = pr.Handle.toLowerCase();
-          return pr;
-        })
-        const main_handles = products.map(product=>product.Handle);
-        const main_handles_string = main_handles.join(',');
-
-       
-        const handleResponse = await axios.get(`https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${main_handles_string}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-            },
-          }
-        )
-
-        const main_products_id = handleResponse.data.products;
-        const productDictionary = main_products_id.reduce((acc, main_product) => {
-          acc[main_product.handle] = main_product.id;
-          return acc;
-        }, {});
-       
- 
-
-
-
-        // const handle_id = product1.complementary_products
-        const complementary_handles = products.map(product => product.complementary_products);
-        const complementary_handles_string = complementary_handles.join(',');
-        console.log(complementary_handles_string);
-        const complementryResponse = await axios.get(
-          `https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${complementary_handles_string}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-            },
-          }
-        );
-
-        
-        const complementary_responses = complementryResponse.data.products;
-        
-        const comp_product_dic = complementary_responses.reduce((acc, response) => {
-          acc[response.handle] = response.admin_graphql_api_id;
-          return acc;
-        }, {});
-
-        
-        console.log("complementary product dictionary : ", comp_product_dic);
-        console.log("product dictionary : ",productDictionary);
-       for(const product of products){
-        
-         const simple_id = productDictionary[product.Handle]
-         var graph_ids = [];
-           const arr = product.complementary_products;
-           console.log(arr);
-           const comp_arr = arr.replace(/\s+/g, '').split(",");
-         graph_ids = comp_arr.map(handle => comp_product_dic[handle.toLowerCase()])
-         console.log(graph_ids);
-         
-         
-
-        const referenceResopnse = await axios.post(
-          `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${simple_id}/metafields.json`,
-          {
-            metafield: {
-              namespace: "custom",
-              key: "products_compl",
-              value: JSON.stringify(graph_ids),
-              type: "list.product_reference"
-            },
+              },
+            ],
           },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-            },
-          }
-        )
-      
-        console.log(`data using handle : ${complementryResponse.data.products[0].id}`);
-        console.log(`upload metafield : ${referenceResopnse.data.products.key}`);
-        // console.log(`data using handle : ,${referenceResopnse.data.products[0].id}`);
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+          },
+        }
+      );
+    
 
-       }  
-      } catch (error) {
-        console.error("Error uploading product:", error.response?.data || error.message);
-        
-      }
-  
- 
-  return { success: errors.length === 0 };
+      const productId = productResponse.data.product.id;
+
+      // Upload image to Shopify
+      const imageResponse = await axios.post(
+        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/images.json`,
+        {
+          image: {
+            src: product.Image_Src,
+            position: product.Image_Position
+            
+          }
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            "ngrok-skip-browser-warning": "69420"
+          },
+        }
+      );
+
+      const MetafieldsResp = await axios.post(
+        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/metafields.json`,
+        {
+          metafield: {
+            namespace: product.mf_Namespace,
+            key: product.mf_key,
+            value : product.mf_value,
+            type : product.mf_type
+            
+          }
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            "ngrok-skip-browser-warning": "69420"
+          },
+        }
+      );
+
+
+      console.log(`Product uploaded: ${productResponse.data.product.title}`);
+      console.log(`Image uploaded: ${imageResponse.data.image.id}`);
+      console.log(`metafields uploaded : ${MetafieldsResp.data.metafield}`)
+    
+    } catch (error) {
+      console.error("Error uploading product:", error.response?.data || error.message);
+      
+      errors.push({
+        product: product.title,
+        error: error.response?.data || error.message,
+      });
+
+      
+    }
+  }
+  return {success : errors.length === 0,errors}
 }
 
  
@@ -240,8 +143,9 @@ export async function action({ request }) {
   const text = await file.text();
   const parsedData = papa.parse(text, { header: true });
 
-
-  const result = await uploadProductsToShopify(parsedData.data);
+  const result = await extractProducts(parsedData.data);
+  // console.log(exractValue);
+  // const result = await uploadProductsToShopify(parsedData.data);
   
   return { success: result.success, errors: result.errors };
 }
@@ -303,7 +207,7 @@ export default function UploadCsv() {
     const text = await file.text();
     const parsedData = papa.parse(text, { header: true });
 
-    const result = await uploadProductsToShopify(parsedData.data);
+    const result = await extractProducts(parsedData.data);
      console.log(result);
   };
 
