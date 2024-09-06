@@ -1,0 +1,33 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "93bb9ba9482db6511746321a9afe5db9"
+name = "product-info-app"
+handle = "product-info-app"
+application_url = "https://paid-blair-ia-cambridge.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "my-app-sho.myshopify.com"
+include_config_on_deploy = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://paid-blair-ia-cambridge.trycloudflare.com/auth/callback",
+  "https://paid-blair-ia-cambridge.trycloudflare.com/auth/shopify/callback",
+  "https://paid-blair-ia-cambridge.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks"
+
+[pos]
+embedded = false
