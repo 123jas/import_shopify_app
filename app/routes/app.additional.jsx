@@ -129,6 +129,27 @@ async function extractProducts(products) {
   }
   return {success : errors.length === 0 };
 }
+
+async function getProductList(get_string) {
+  try {
+    const get_response = await axios.get(
+      `https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${get_string}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+        },
+      }
+    );
+
+    return get_response;
+  } 
+  catch (error) {
+    return error;
+  }
+   
+}
+
 async function uploadProductsToShopify(products) {
  
   const errors = [];
@@ -140,19 +161,11 @@ async function uploadProductsToShopify(products) {
           pr.Handle = pr.Handle.toLowerCase();
           return pr;
         })
+
+        // get the ids of main products with the help 0f handle
         const main_handles = products.map(product=>product.Handle);
         const main_handles_string = main_handles.join(',');
-
-       
-        const handleResponse = await axios.get(`https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${main_handles_string}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-            },
-          }
-        )
-
+        const handleResponse = await getProductList(main_handles_string);
         const main_products_id = handleResponse.data.products;
         const productDictionary = main_products_id.reduce((acc, main_product) => {
           acc[main_product.handle] = main_product.id;
@@ -161,23 +174,11 @@ async function uploadProductsToShopify(products) {
        
  
 
-
-
-        // const handle_id = product1.complementary_products
+        // get the ids of complementary products  
         const complementary_handles = products.map(product => product.complementary_products);
         const complementary_handles_string = complementary_handles.join(',');
         console.log(complementary_handles_string);
-        const complementryResponse = await axios.get(
-          `https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${complementary_handles_string}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-            },
-          }
-        );
-
-        
+        const complementryResponse = await getProductList(complementary_handles_string);
         const complementary_responses = complementryResponse.data.products;
         
         const comp_product_dic = complementary_responses.reduce((acc, response) => {
@@ -188,6 +189,9 @@ async function uploadProductsToShopify(products) {
         
         console.log("complementary product dictionary : ", comp_product_dic);
         console.log("product dictionary : ",productDictionary);
+
+
+      // post the complementary products 
        for(const product of products){
         
          const simple_id = productDictionary[product.Handle]
@@ -221,7 +225,7 @@ async function uploadProductsToShopify(products) {
         console.log(`data using handle : ${complementryResponse.data.products[0].id}`);
         console.log(`data using referenceResopnse : ${referenceResopnse}`);
         
-        // console.log(`data using handle : ,${referenceResopnse.data.products[0].id}`);
+        
 
        }  
       } catch (error) {
