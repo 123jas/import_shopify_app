@@ -4,16 +4,16 @@ import { useFetcher } from "@remix-run/react";
 import { Page, Button, DropZone, Banner, Text } from "@shopify/polaris";
 import { useState,useEffect } from "react";
 import papa from 'papaparse';
-
-
+ 
 import axios from "axios";
 import { authenticate } from "../shopify.server";
 // import Metafields from "./app.metafields";
 // import { text } from "stream/consumers";/
+require('dotenv').config();
 
-const SHOPIFY_API_VERSION = "2024-07"; // Use the latest stable API version
-const SHOPIFY_STORE_DOMAIN = "my-app-sho.myshopify.com";
-const SHOPIFY_ADMIN_API_ACCESS_TOKEN = "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";
+const shopifyToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+const shopDomain = process.env.SHOPIFY_STORE_DOMAIN;
+const shopifyVersion = process.env.SHOPIFY_API_VERSION;
  
 
 // const { papa } = pkg;
@@ -32,7 +32,7 @@ async function extractProducts(products) {
     try {
      
       const productResponse = await axios.post(
-        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products.json`,
+        `https://${shopDomain}/admin/api/${shopifyVersion}/products.json`,
         {
           product: {
             title: product.Title,
@@ -64,7 +64,7 @@ async function extractProducts(products) {
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            "X-Shopify-Access-Token": shopifyToken,
           },
         }
       );
@@ -74,7 +74,7 @@ async function extractProducts(products) {
 
       // Upload image to Shopify
       const imageResponse = await axios.post(
-        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/images.json`,
+        `https://${shopDomain}/admin/api/${shopifyVersion}/products/${productId}/images.json`,
         {
           image: {
             src: product.Image_Src,
@@ -85,14 +85,14 @@ async function extractProducts(products) {
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            "X-Shopify-Access-Token": shopifyToken,
             "ngrok-skip-browser-warning": "69420"
           },
         }
       );
 
       const MetafieldsResp = await axios.post(
-        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/metafields.json`,
+        `https://${shopDomain}/admin/api/${shopifyVersion}/products/${productId}/metafields.json`,
         {
           metafield: {
             namespace: product.mf_Namespace,
@@ -105,7 +105,7 @@ async function extractProducts(products) {
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            "X-Shopify-Access-Token": shopifyToken,
             "ngrok-skip-browser-warning": "69420"
           },
         }
@@ -133,11 +133,11 @@ async function extractProducts(products) {
 async function getProductList(get_string) {
   try {
     const get_response = await axios.get(
-      `https://my-app-sho.myshopify.com/admin/api/2024-07/products.json?handle=${get_string}`,
+      `https://${shopDomain}/admin/api/${shopifyVersion}/products.json?handle=${get_string}`,
       {
         headers: {
           "Content-Type": "application/json",
-          "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+          "X-Shopify-Access-Token": shopifyToken,
         },
       }
     );
@@ -150,7 +150,7 @@ async function getProductList(get_string) {
    
 }
 
-async function uploadProductsToShopify(products) {
+async function uploadComplementaryProducts(products) {
  
   const errors = [];
   
@@ -205,7 +205,7 @@ async function uploadProductsToShopify(products) {
          
 
         const referenceResopnse = await axios.post(
-          `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/products/${simple_id}/metafields.json`,
+          `https://${shopDomain}/admin/api/${shopifyVersion}/products/${simple_id}/metafields.json`,
           {
             metafield: {
               namespace: "custom",
@@ -217,7 +217,7 @@ async function uploadProductsToShopify(products) {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+              "X-Shopify-Access-Token": shopifyToken,
             },
           }
         )
@@ -252,7 +252,7 @@ export async function action({ request }) {
 
   const exractValue = await extractProducts(parsedData.data);
   console.log(exractValue);
-  const result = await uploadProductsToShopify(parsedData.data);
+  const result = await uploadComplementaryProducts(parsedData.data);
   
   return { success: result.success, errors: result.errors };
 }
@@ -314,7 +314,7 @@ export default function UploadCsv() {
     const text = await file.text();
     const parsedData = papa.parse(text, { header: true });
 
-    const result = await uploadProductsToShopify(parsedData.data);
+    const result = await uploadComplementaryProducts(parsedData.data);
      console.log(result);
   };
 
